@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Forecasting Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #1a1c24;
+            color: #ffffff;
+            padding: 0;
+        }
+
+        .navbar {
+            background-color: #222435;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .form-container {
+            background: #333a4d;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .form-container input {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #444;
+            width: calc(100% - 22px);
+            margin-bottom: 15px;
+            background-color: #222;
+            color: #fff;
+        }
+
+        .form-container button {
+            padding: 12px 20px;
+            background: #4caf50;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .info-box {
+            background-color: #2a2f3e;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        table th, table td {
+            border: 1px solid #444;
+            padding: 12px;
+            text-align: center;
+        }
+
+        table th {
+            background-color: #222435;
+            color: #fff;
+        }
+
+        table td {
+            background-color: #333a4d;
+        }
+
+        .chart-container {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>Sales Forecasting Dashboard</h1>
+    </div>
+
+    <div class="container">
+        <!-- Form for Input -->
+        <div class="form-container">
+            <h2>Add Sales Data</h2>
+            <form method="POST">
+                <label for="month">Month:</label>
+                <input type="text" id="month" name="month" placeholder="Enter Month (e.g., May)" required>
+
+                <label for="revenue">Revenue (₹):</label>
+                <input type="number" id="revenue" name="revenue" placeholder="Enter Revenue Amount" required>
+
+                <button type="submit">Add Data</button>
+            </form>
+        </div>
+
+        <!-- Prediction Information -->
+        <div class="info-box">
+            <h2>Predicted Sales</h2>
+            <p>The predicted sales for the next month are: <strong>{{ predicted_sales }}</strong></p>
+        </div>
+
+        <!-- Sales Data Table -->
+        <h2>Sales Data</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th>Revenue (₹)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in chart_data %}
+                <tr>
+                    <td>{{ item.month }}</td>
+                    <td>₹{{ item.revenue }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Sales Chart -->
+        <div class="chart-container">
+            <canvas id="salesChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Pass chart data from Flask
+        const chartData = {{ chart_data | tojson | safe }};
+        const labels = chartData.map(item => item.month);
+        const revenue = chartData.map(item => item.revenue);
+
+        // Generate dynamic colors for each bar
+        const colors = labels.map((_, index) => `hsl(${index * 30}, 70%, 60%)`);
+
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Revenue (₹)',
+                        data: revenue,
+                        backgroundColor: colors,
+                        borderColor: colors.map(color => color.replace('60%', '50%')),
+                        borderWidth: 1,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Monthly Revenue',
+                        font: { size: 20 },
+                        color: '#fff',
+                    },
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: context => `₹${context.raw.toLocaleString()}`,
+                        },
+                    },
+                    datalabels: {
+                        display: true,
+                        color: '#fff',
+                        anchor: 'end',
+                        align: 'top',
+                        formatter: value => `₹${value.toLocaleString()}`,
+                    },
+                },
+                scales: {
+                    x: {
+                        grid: { display: true, color: '#444' },
+                        ticks: { color: '#fff' },
+                    },
+                    y: {
+                        grid: { display: true, color: '#444' },
+                        ticks: {
+                            color: '#fff',
+                            callback: value => `₹${value.toLocaleString()}`,
+                        },
+                    },
+                },
+            },
+            plugins: [ChartDataLabels],
+        });
+    </script>
+</body>
+</html>
